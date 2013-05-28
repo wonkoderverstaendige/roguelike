@@ -28,6 +28,11 @@ class Rect:
         y_intersect = self.y1 <= other.y2 and self.y2 >= other.y1
         return (x_intersect and y_intersect)        
         
+        
+    def random_pos(self):
+        return (libtcod.random_get_int(0, self.x1, self.x2),
+                libtcod.random_get_int(0, self.y1, self.y2))
+        
 class Map():
     
     def __init__(self, width, height, tiles=None, labels=False):
@@ -107,20 +112,13 @@ class World:
         self.map = Map(map_width, map_height)
         self.npcs = []
 
+        self.populate()
         if self.map.labels:
             for i, r in enumerate(self.map.rooms):
                 (rx, ry) = r.center()
                 room_no = Object(self.map, rx, ry, chr(65+i), libtcod.white)
                 self.npcs.insert(0, room_no) #draw early, so monsters are drawn on top
         
-        (startx,starty) = self.map.rooms[0].center()
-        self.hero = Object(self.map, startx, starty, '@', libtcod.white)
-        self.hero.create_fov_map()
-        self.hero.refresh_fov_map()
-        # characters
-        (startx,starty) = self.map.rooms[-1].center()
-        self.npcs.append(Object(self.map, startx, starty, 'F', libtcod.yellow))
-
 
     def render_all(self, target):
         if target is not None:
@@ -154,6 +152,21 @@ class World:
             o.clear(target)
         self.hero.clear(target)
 
+    def populate(self):
+        for i in xrange(len(self.map.rooms)):
+            room = self.map.rooms[i]
+            if not i:
+                #first room, put player here
+                (startx,starty) = room.center()
+                self.hero = Object(self.map, startx, starty, '@', libtcod.white)
+                self.hero.create_fov_map()
+                self.hero.refresh_fov_map() 
+            else:
+                # enemies and other characters
+                for n in xrange(10):
+                    (startx,starty) = room.random_pos()
+                    self.npcs.append(Object(self.map, startx, starty, 'F', libtcod.yellow))
+   
 
 class Object:
     def __init__(self, levelmap, x, y, char, color):
